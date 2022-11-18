@@ -18,7 +18,6 @@ package com.okta.sdk.error;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.JacksonException;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -39,14 +38,14 @@ public class ErrorHandler implements ResponseErrorHandler {
 
     @Override
     public boolean hasError(ClientHttpResponse httpResponse) throws IOException {
-        return httpResponse.getStatusCode().series() == HttpStatus.Series.CLIENT_ERROR ||
-            httpResponse.getStatusCode().series() == HttpStatus.Series.SERVER_ERROR;
+        return httpResponse.getStatusCode().is4xxClientError() ||
+            httpResponse.getStatusCode().is5xxServerError();
     }
 
     @Override
     public void handleError(ClientHttpResponse httpResponse) throws IOException, ResourceException {
 
-        final int statusCode = httpResponse.getRawStatusCode();
+        final int statusCode = httpResponse.getStatusCode().value();
         final String message = new String(FileCopyUtils.copyToByteArray(httpResponse.getBody()));
 
         if (!isValid(message)) {
