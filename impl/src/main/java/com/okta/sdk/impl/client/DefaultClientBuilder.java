@@ -54,14 +54,16 @@ import com.okta.sdk.impl.oauth2.AccessTokenRetrieverServiceImpl;
 import com.okta.sdk.impl.oauth2.OAuth2ClientCredentials;
 import com.okta.sdk.impl.util.ConfigUtil;
 import com.okta.sdk.impl.util.DefaultBaseUrlResolver;
-import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.ProxyAuthenticationStrategy;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.impl.DefaultAuthenticationStrategy;
+import org.apache.hc.client5.http.impl.DefaultHttpRequestRetryStrategy;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.io.SocketConfig;
+import org.apache.hc.core5.util.TimeValue;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.openapitools.client.ApiClient;
@@ -450,29 +452,36 @@ public class DefaultClientBuilder implements ClientBuilder {
     }
 
     private BufferingClientHttpRequestFactory requestFactory(ClientConfiguration clientConfig) {
+        int connectionTimeout = clientConfig.getConnectionTimeout();
 
-        final HttpClientBuilder clientBuilder = HttpClientBuilder.create();
+        final HttpClientBuilder clientBuilder = HttpClientBuilder.create()
+            .setConnectionManager(PoolingHttpClientConnectionManagerBuilder.create()
+                .setDefaultSocketConfig(SocketConfig.custom().setSoTimeout(connectionTimeout, TimeUnit.SECONDS).build())
+                //increase pool size to have high concurrency on a single client instance
+                .build());
 
         if (clientConfig.getProxy() != null) {
             clientBuilder.useSystemProperties();
             clientBuilder.setProxy(new HttpHost(clientConfig.getProxyHost(), clientConfig.getProxyPort()));
-            final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-            AuthScope authScope = new AuthScope(clientConfig.getProxyHost(), clientConfig.getProxyPort());
-            UsernamePasswordCredentials usernamePasswordCredentials =
-                new UsernamePasswordCredentials(clientConfig.getProxyUsername(), clientConfig.getProxyPassword());
-            credentialsProvider.setCredentials(authScope, usernamePasswordCredentials);
-            clientBuilder.setDefaultCredentialsProvider(credentialsProvider);
-            clientBuilder.setProxyAuthenticationStrategy(new ProxyAuthenticationStrategy());
+            String proxyUsername = clientConfig.getProxyUsername();
+            String proxyPassword = clientConfig.getProxyPassword();
+            if (proxyUsername != null && proxyPassword != null) {
+                AuthScope authScope = new AuthScope(clientConfig.getProxyHost(), clientConfig.getProxyPort());
+                final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+                UsernamePasswordCredentials usernamePasswordCredentials =
+                    new UsernamePasswordCredentials(proxyUsername, proxyPassword.toCharArray());
+                credentialsProvider.setCredentials(authScope, usernamePasswordCredentials);
+                clientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+                clientBuilder.setProxyAuthenticationStrategy(new DefaultAuthenticationStrategy());
+            }
         }
 
-        final CloseableHttpClient httpClient = clientBuilder.build();
-
-        final HttpComponentsClientHttpRequestFactory clientHttpRequestFactory = new HttpComponentsClientHttpRequestFactory();
-        clientHttpRequestFactory.setHttpClient(httpClient);
-        clientHttpRequestFactory.setConnectionRequestTimeout(clientConfig.getConnectionTimeout() * 1000);
-        clientHttpRequestFactory.setConnectTimeout(clientConfig.getConnectionTimeout() * 1000);
-        clientHttpRequestFactory.setReadTimeout(clientConfig.getConnectionTimeout() * 1000);
-
+        final HttpComponentsClientHttpRequestFactory clientHttpRequestFactory = new HttpComponentsClientHttpRequestFactory(clientBuilder.build());
+        if (connectionTimeout != 0) {
+            //timeout 0 is not infinite, despite what the doc says
+            clientHttpRequestFactory.setConnectionRequestTimeout(connectionTimeout * 1000);
+        }
+        clientHttpRequestFactory.setConnectTimeout(connectionTimeout * 1000);
         return new BufferingClientHttpRequestFactory(clientHttpRequestFactory);
     }
 
