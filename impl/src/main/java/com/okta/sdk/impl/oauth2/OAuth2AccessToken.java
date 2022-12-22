@@ -15,14 +15,19 @@
  */
 package com.okta.sdk.impl.oauth2;
 
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+
 import java.time.Duration;
 import java.time.Instant;
+
+import static com.fasterxml.jackson.databind.PropertyNamingStrategies.SnakeCaseStrategy;
 
 /**
  * Represents the OAuth2 access token returned by Authorization server.
  *
  * @since 1.6.0
  */
+@JsonNaming(SnakeCaseStrategy.class)
 public class OAuth2AccessToken {
 
     /* Token body constants */

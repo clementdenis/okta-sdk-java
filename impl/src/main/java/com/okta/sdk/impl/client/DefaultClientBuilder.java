@@ -71,6 +71,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
@@ -349,6 +350,7 @@ public class DefaultClientBuilder implements ClientBuilder {
         }
 
         ApiClient apiClient = new ApiClient(restTemplate(this.clientConfig), this.cacheManager);
+        apiClient.setBasePath(this.clientConfig.getBaseUrl());
 
         if (!isOAuth2Flow()) {
             if (this.clientConfig.getClientCredentialsResolver() == null && this.clientCredentials != null) {
@@ -357,7 +359,6 @@ public class DefaultClientBuilder implements ClientBuilder {
                 this.clientConfig.setClientCredentialsResolver(new DefaultClientCredentialsResolver(this.clientConfig));
             }
 
-            apiClient.setBasePath(this.clientConfig.getBaseUrl());
             apiClient.setApiKeyPrefix("SSWS");
             apiClient.setApiKey((String) this.clientConfig.getClientCredentialsResolver().getClientCredentials().getCredentials());
         } else {
@@ -370,7 +371,7 @@ public class DefaultClientBuilder implements ClientBuilder {
             OAuth2ClientCredentials oAuth2ClientCredentials =
                 new OAuth2ClientCredentials(accessTokenRetrieverService);
 
-            this.clientConfig.setClientCredentialsResolver(new DefaultClientCredentialsResolver(oAuth2ClientCredentials));
+            apiClient.setAccessToken(oAuth2ClientCredentials.getCredentials().getAccessToken());
         }
 
         return apiClient;
@@ -423,6 +424,9 @@ public class DefaultClientBuilder implements ClientBuilder {
 
         List<HttpMessageConverter<?>> messageConverters = new ArrayList<>();
         messageConverters.add(mappingJackson2HttpMessageConverter);
+        if (isOAuth2Flow()) {
+            messageConverters.add(new FormHttpMessageConverter());
+        }
 
         RestTemplate restTemplate = new RestTemplate(messageConverters);
         restTemplate.setErrorHandler(new ErrorHandler());

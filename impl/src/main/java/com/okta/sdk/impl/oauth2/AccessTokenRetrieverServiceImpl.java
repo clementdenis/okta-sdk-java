@@ -96,23 +96,23 @@ public class AccessTokenRetrieverServiceImpl implements AccessTokenRetrieverServ
             httpHeaders.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
             httpHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-            MultiValueMap<String, String> queryParams = new LinkedMultiValueMap<>();
-            queryParams.add("grant_type", "client_credentials");
-            queryParams.add("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
-            queryParams.add("client_assertion", signedJwt);
-            queryParams.add("scope", scope);
+            MultiValueMap<String, Object> formParams = new LinkedMultiValueMap<>();
+            formParams.add("grant_type", "client_credentials");
+            formParams.add("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
+            formParams.add("client_assertion", signedJwt);
+            formParams.add("scope", scope);
 
             ResponseEntity<OAuth2AccessToken> responseEntity = apiClient.invokeAPI(TOKEN_URI,
                 HttpMethod.POST,
                 Collections.emptyMap(),
-                queryParams,
+                null,
                 null,
                 httpHeaders,
                 new LinkedMultiValueMap<>(),
-                null,
+                formParams,
                 Collections.singletonList(MediaType.APPLICATION_JSON),
-                MediaType.APPLICATION_JSON,
-                new String[] { "OAuth_2.0" },
+                MediaType.APPLICATION_FORM_URLENCODED,
+                new String[] { "oauth2" },
                 new ParameterizedTypeReference<OAuth2AccessToken>() {});
 
             OAuth2AccessToken oAuth2AccessToken = responseEntity.getBody();
