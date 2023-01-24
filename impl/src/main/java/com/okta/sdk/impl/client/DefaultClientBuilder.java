@@ -458,6 +458,8 @@ public class DefaultClientBuilder implements ClientBuilder {
             .setConnectionManager(PoolingHttpClientConnectionManagerBuilder.create()
                 .setDefaultSocketConfig(SocketConfig.custom().setSoTimeout(connectionTimeout, TimeUnit.SECONDS).build())
                 //increase pool size to have high concurrency on a single client instance
+                .setMaxConnTotal(500)
+                .setMaxConnPerRoute(500)
                 .build())
             //disable retries as they interfere with 429 handling
             .setRetryStrategy(new DefaultHttpRequestRetryStrategy(0, TimeValue.ZERO_MILLISECONDS));
