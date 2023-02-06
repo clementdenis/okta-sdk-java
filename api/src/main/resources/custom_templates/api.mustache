@@ -373,6 +373,7 @@ import org.openapitools.jackson.nullable.JsonNullableModule;
             {{#returnType}}
                     PagedList pagedList = PagedList.constructPagedList(responseEntity);
 
+                    /*
                     String afterMarker = pagedList.getAfter(pagedList.getNextPage());
 
                     if (afterMarker != null) {
@@ -387,6 +388,7 @@ import org.openapitools.jackson.nullable.JsonNullableModule;
                     afterMarker = newPagedList.getAfter(newPagedList.getNextPage());
                     } while (afterMarker != null);
                     }
+                    */
                     return pagedList;
             {{/returnType}}
             {{^returnType}}
