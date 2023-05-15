@@ -42,9 +42,10 @@ import org.springframework.http.RequestEntity;
 import org.springframework.http.RequestEntity.BodyBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpRequestFactory;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.client.config.RequestConfig;
+import org.apache.hc.core5.util.Timeout;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.config.RequestConfig;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestExecution;
@@ -925,12 +926,12 @@ List<ClientHttpRequestInterceptor> currentInterceptors = this.restTemplate.getIn
                                                 }
 
                                                 private ClientHttpRequestFactory getClientHttpRequestFactory() {
-                                                    int timeout = 5000; //TODO: set from config
+                                                    Timeout timeout = Timeout.ofMilliseconds(5000); //TODO: set from config
 
                                                     RequestConfig config = RequestConfig.custom()
                                                       .setConnectTimeout(timeout)
                                                       .setConnectionRequestTimeout(timeout)
-                                                      .setSocketTimeout(timeout)
+                                                      //.setSocketTimeout(timeout) //does not exist in hc5
                                                       .build();
 
                                                     CloseableHttpClient client = HttpClientBuilder
