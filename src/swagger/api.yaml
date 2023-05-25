@@ -22244,6 +22244,7 @@ components:
         - email
         - hotp
         - push
+        - signed_nonce
         - question
         - sms
         - token
@@ -27349,6 +27350,7 @@ components:
           call: '#/components/schemas/CallUserFactor'
           email: '#/components/schemas/EmailUserFactor'
           push: '#/components/schemas/PushUserFactor'
+          signed_nonce: '#/components/schemas/PushUserFactor'
           question: '#/components/schemas/SecurityQuestionUserFactor'
           sms: '#/components/schemas/SmsUserFactor'
           token: '#/components/schemas/TokenUserFactor'
