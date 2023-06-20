@@ -23,6 +23,8 @@ import com.okta.sdk.cache.CacheConfigurationBuilder;
 import com.okta.sdk.client.AuthenticationScheme;
 import com.okta.sdk.client.AuthorizationMode;
 import com.okta.sdk.impl.api.ClientCredentialsResolver;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.impl.crypto.JwtSigner;
 
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -54,6 +56,8 @@ public class ClientConfiguration extends HttpClientConfiguration {
     private String privateKey;
     private String oAuth2AccessToken;
     private String kid;
+    private JwtSigner jwtSigner;
+    private SignatureAlgorithm signatureAlgorithm;
 
     public String getApiToken() {
         return apiToken;
@@ -149,6 +153,22 @@ public class ClientConfiguration extends HttpClientConfiguration {
 
     public void setKid(String kid) {
         this.kid = kid;
+    }
+
+    public JwtSigner getJwtSigner() {
+        return jwtSigner;
+    }
+
+    public void setJwtSigner(JwtSigner jwtSigner) {
+        this.jwtSigner = jwtSigner;
+    }
+
+    public SignatureAlgorithm getSignatureAlgorithm() {
+        return signatureAlgorithm;
+    }
+
+    public void setSignatureAlgorithm(SignatureAlgorithm signatureAlgorithm) {
+        this.signatureAlgorithm = signatureAlgorithm;
     }
 
     /**
