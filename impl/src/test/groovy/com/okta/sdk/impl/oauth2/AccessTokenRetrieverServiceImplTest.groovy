@@ -118,7 +118,7 @@ class AccessTokenRetrieverServiceImplTest {
     @Test
     void testInstantiationWithNullClientConfig() {
         Util.expect(IllegalArgumentException) {
-            new AccessTokenRetrieverServiceImpl(null, null)
+            new AccessTokenRetrieverServiceImpl(null, null, null)
         }
     }
 
@@ -174,7 +174,7 @@ class AccessTokenRetrieverServiceImplTest {
 
         when(clientConfiguration.getPrivateKey()).thenReturn(PRIVATE_KEY)
 
-        def accessTokenRetrievalService = new AccessTokenRetrieverServiceImpl(clientConfiguration, apiClient)
+        def accessTokenRetrievalService = new AccessTokenRetrieverServiceImpl(clientConfiguration, apiClient, null)
 
         OAuth2AccessToken oAuth2AccessToken = new OAuth2AccessToken()
         oAuth2AccessToken.setAccessToken("accessToken")
@@ -323,7 +323,7 @@ class AccessTokenRetrieverServiceImplTest {
         when(clientConfig.getClientCredentialsResolver()).thenReturn(
             new DefaultClientCredentialsResolver({ -> Optional.empty() }))
 
-        def accessTokenRetrieverService = new AccessTokenRetrieverServiceImpl(clientConfig, tokenClient)
+        def accessTokenRetrieverService = new AccessTokenRetrieverServiceImpl(clientConfig, tokenClient, null)
         accessTokenRetrieverService.getOAuth2AccessToken()
 
         verify(tokenClient, times(1))
@@ -375,7 +375,7 @@ class AccessTokenRetrieverServiceImplTest {
             ArgumentMatchers.any() as String[],
             any())).thenThrow(apiException)
 
-        def accessTokenRetrieverService = new AccessTokenRetrieverServiceImpl(clientConfig, apiClient)
+        def accessTokenRetrieverService = new AccessTokenRetrieverServiceImpl(clientConfig, apiClient, null)
         accessTokenRetrieverService.getOAuth2AccessToken()
 
         verify(apiClient, times(1)).invokeAPI()
@@ -417,10 +417,10 @@ class AccessTokenRetrieverServiceImplTest {
                 }
             })
             cc.setClientCredentialsResolver(new DefaultClientCredentialsResolver({ -> Optional.empty() }))
-            return new AccessTokenRetrieverServiceImpl(cc, apiClient)
+            return new AccessTokenRetrieverServiceImpl(cc, apiClient, null)
         }
 
-        return new AccessTokenRetrieverServiceImpl(clientConfiguration, apiClient)
+        return new AccessTokenRetrieverServiceImpl(clientConfiguration, apiClient, null)
     }
 
     @Test
