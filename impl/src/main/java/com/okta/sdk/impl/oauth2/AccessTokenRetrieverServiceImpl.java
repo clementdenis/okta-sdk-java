@@ -27,6 +27,10 @@ import com.okta.sdk.impl.config.ClientConfiguration;
 import com.okta.sdk.impl.util.ConfigUtil;
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.impl.DefaultJwtBuilder;
+import io.jsonwebtoken.impl.crypto.JwtSigner;
+import io.jsonwebtoken.security.Keys;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
@@ -44,11 +48,13 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.InvalidKeyException;
+import java.security.Key;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Implementation of {@link AccessTokenRetrieverService} interface.
@@ -57,6 +63,8 @@ import java.util.*;
  */
 public class AccessTokenRetrieverServiceImpl implements AccessTokenRetrieverService {
     private static final Logger log = LoggerFactory.getLogger(AccessTokenRetrieverServiceImpl.class);
+
+    private static final Map<SignatureAlgorithm, PrivateKey> DUMMY_KEYS = new ConcurrentHashMap<>();
 
     private static final String TOKEN_URI  = "/oauth2/v1/token";
 
@@ -128,23 +136,38 @@ public class AccessTokenRetrieverServiceImpl implements AccessTokenRetrieverServ
      */
     String createSignedJWT() throws InvalidKeyException, IOException {
         String clientId = tokenClientConfiguration.getClientId();
-        PrivateKey privateKey = parsePrivateKey(getPemReader());
         Instant now = Instant.now();
 
-        JwtBuilder builder = Jwts.builder()
+        JwtSigner jwtSigner = tokenClientConfiguration.getJwtSigner();
+        JwtBuilder builder = jwtSigner == null ? Jwts.builder() : new DefaultJwtBuilder() {
+            @Override
+            protected JwtSigner createSigner(SignatureAlgorithm alg, Key key) {
+                return jwtSigner;
+            }
+        };
+        builder
             .setAudience(tokenClientConfiguration.getBaseUrl() + TOKEN_URI)
             .setIssuedAt(Date.from(now))
             .setExpiration(Date.from(now.plus(50, ChronoUnit.MINUTES)))             // see Javadoc
             .setIssuer(clientId)
             .setSubject(clientId)
-            .claim("jti", UUID.randomUUID().toString())
-            .signWith(privateKey);
+            .claim("jti", UUID.randomUUID().toString());
 
         if (Strings.hasText(tokenClientConfiguration.getKid())) {
             builder.setHeaderParam("kid", tokenClientConfiguration.getKid());
         }
-
-        return builder.compact();
+        PrivateKey privateKey;
+        SignatureAlgorithm algorithm;
+        if (jwtSigner != null) {
+            algorithm = tokenClientConfiguration.getSignatureAlgorithm();
+            //need to provide a dummy key so the JwtBuilder validates the signature, but cache them as possibly slow
+            privateKey = DUMMY_KEYS.computeIfAbsent(algorithm,
+                signatureAlgorithm -> Keys.keyPairFor(signatureAlgorithm).getPrivate());
+        } else {
+            privateKey = parsePrivateKey(getPemReader());
+            algorithm = SignatureAlgorithm.forSigningKey(privateKey);
+        }
+        return builder.signWith(privateKey, algorithm).compact();
     }
 
     /**
@@ -243,6 +266,8 @@ public class AccessTokenRetrieverServiceImpl implements AccessTokenRetrieverServ
         tokenClientConfiguration.setClientId(apiClientConfiguration.getClientId());
         tokenClientConfiguration.setScopes(apiClientConfiguration.getScopes());
         tokenClientConfiguration.setPrivateKey(apiClientConfiguration.getPrivateKey());
+        tokenClientConfiguration.setJwtSigner(apiClientConfiguration.getJwtSigner());
+        tokenClientConfiguration.setSignatureAlgorithm(apiClientConfiguration.getSignatureAlgorithm());
         tokenClientConfiguration.setKid(apiClientConfiguration.getKid());
 
         // setting this to '0' will disable this check and only 'retryMaxAttempts' will be effective

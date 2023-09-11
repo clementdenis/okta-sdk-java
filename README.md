@@ -338,7 +338,7 @@ groupApi.assignUserToGroup(group.getId(), user.getId());
 [//]: # (method: listUserFactors)
 ```java
 UserFactorApi userFactorApi = new UserFactorApi(client);
-List userFactors = userFactorApi.listFactors("userId");
+List<UserFactor> userFactors = userFactorApi.listFactors("userId");
 ```
 [//]: # (end: listUserFactors)
 

@@ -47,6 +47,9 @@ import com.okta.sdk.impl.util.ConfigUtil;
 import com.okta.sdk.impl.util.DefaultBaseUrlResolver;
 
 import com.okta.sdk.impl.retry.OktaHttpRequestRetryStrategy;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.impl.crypto.JwtSigner;
+import io.jsonwebtoken.security.SignatureException;
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.config.ConnectionConfig;
@@ -77,6 +80,7 @@ import java.nio.file.*;
 import java.security.PrivateKey;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 /**
@@ -439,8 +443,12 @@ public class DefaultClientBuilder implements ClientBuilder {
             "At least one scope is required");
         String privateKey = clientConfiguration.getPrivateKey();
         String oAuth2AccessToken = clientConfiguration.getOAuth2AccessToken();
-        Assert.isTrue(Objects.nonNull(privateKey) || Objects.nonNull(oAuth2AccessToken),
-            "Either Private Key (or) Access Token must be supplied for OAuth2 Authentication mode");
+        JwtSigner jwtSigner = clientConfiguration.getJwtSigner();
+        SignatureAlgorithm signatureAlgorithm = clientConfiguration.getSignatureAlgorithm();
+        Assert.isTrue(Objects.nonNull(privateKey) || Objects.nonNull(oAuth2AccessToken)
+                      || (Objects.nonNull(jwtSigner) && Objects.nonNull(signatureAlgorithm)),
+                          "Either Private Key (or) Access Token (or) (JWT Signer and Signature Algorithm)" +
+                          " must be supplied for OAuth2 Authentication mode");
 
         if (Strings.hasText(privateKey) && !ConfigUtil.hasPrivateKeyContentWrapper(privateKey)) {
             // privateKey is a file path, check if the file exists
@@ -563,6 +571,22 @@ public class DefaultClientBuilder implements ClientBuilder {
             }
         }
         return resultStringBuilder.toString();
+    }
+
+    @Override
+    public ClientBuilder setCustomJwtSigner(UnaryOperator<String> jwtSigner, String algorithm) {
+        Assert.notNull(jwtSigner, "jwtSigner cannot be null.");
+        clientConfig.setJwtSigner(jwtSigner::apply);
+        try {
+            SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.forName(algorithm);
+            Assert.isTrue((signatureAlgorithm.isRsa() || signatureAlgorithm.isEllipticCurve())
+                          && !signatureAlgorithm.name().startsWith("PS"),
+                signatureAlgorithm + " signature algorithm not supported");
+            clientConfig.setSignatureAlgorithm(signatureAlgorithm);
+        } catch (SignatureException e) {
+            throw new IllegalArgumentException(algorithm + " signature algorithm not valid");
+        }
+        return this;
     }
 
     @Override

@@ -196,7 +196,7 @@ public class ReadmeSnippets {
     private void listUserFactors() throws ApiException {
         UserFactorApi userFactorApi = new UserFactorApi(client);
 
-        List userFactors = userFactorApi.listFactors("userId");
+        List<UserFactor> userFactors = userFactorApi.listFactors("userId");
     }
 
     private void getUserFactor() throws ApiException {
