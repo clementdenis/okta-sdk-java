@@ -24342,6 +24342,15 @@ components:
             type: string
           example:
             - 79496f234c814638b1cc44f51a782781
+    CustomRole:
+      allOf:
+        - $ref: '#/components/schemas/Role'
+        - type: object
+          properties:
+            resource-set:
+              type: string
+            role:
+              type: string
     DNSRecordType:
       example: TXT
       type: string
@@ -29783,6 +29792,10 @@ components:
           readOnly: true
         _links:
           $ref: '#/components/schemas/LinksSelf'
+      discriminator:
+        propertyName: type
+        mapping:
+          CUSTOM: '#/components/schemas/CustomRole'
     RoleAssignedUser:
       type: object
       properties:
