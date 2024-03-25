@@ -29914,6 +29914,8 @@ components:
     RoleType:
       type: string
       enum:
+        - ACCESS_CERTIFICATIONS_ADMIN
+        - ACCESS_REQUESTS_ADMIN
         - API_ACCESS_MANAGEMENT_ADMIN
         - API_ADMIN
         - APP_ADMIN
