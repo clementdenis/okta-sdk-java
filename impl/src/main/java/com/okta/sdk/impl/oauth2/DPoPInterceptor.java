@@ -60,20 +60,13 @@ public class DPoPInterceptor implements ExecChainHandler {
     private static final String DPOP_HEADER = "DPoP";
     //nonce is valid for 24 hours, but can only refresh it when doing a token request => start refreshing after 22 hours
     private static final int NONCE_VALID_SECONDS = 60 * 60 * 22;
-    private static final MessageDigest SHA256; //required to sign ath claim
-
-    static {
-        try {
-            SHA256 = MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-    }
+    private static final int MAX_CONSECUTIVE_ERRORS = 5;
 
     //if null, means dpop is not enabled yet
     private PrivateJwk<PrivateKey, PublicKey, ?> jwk;
     private String nonce;
     private Instant nonceValidUntil;
+    private int errorCounter = 0;
 
     @Override
     public ClassicHttpResponse execute(ClassicHttpRequest request, ExecChain.Scope scope, ExecChain execChain)
@@ -94,8 +87,14 @@ public class DPoPInterceptor implements ExecChainHandler {
             }
             if (response.getCode() == 400) {
                 JsonNode errorBody = OBJECT_MAPPER.readTree(response.getEntity().getContent());
-                Header nonceHeader = response.getFirstHeader("dpop-nonce");
-                DPopHandshakeState handshakeState = handleHandshakeResponse(errorBody.get("error"), nonceHeader);
+                DPopHandshakeState handshakeState;
+                if (errorCounter++ > MAX_CONSECUTIVE_ERRORS) {
+                    //avoids stack overflow if the error is unexpected
+                    handshakeState = DPopHandshakeState.TOO_MANY_HANDSHAKE_ERRORS;
+                } else {
+                    handshakeState = handleHandshakeResponse(errorBody.get("error"),
+                        response.getFirstHeader("dpop-nonce"));
+                }
                 throw new DPoPHandshakeException(handshakeState, OBJECT_MAPPER.writeValueAsString(errorBody));
             }
         }
@@ -114,16 +113,23 @@ public class DPoPInterceptor implements ExecChainHandler {
             .issuedAt(new Date());
         Header authorization = request.getFirstHeader("Authorization");
         if (authorization != null) {
-            //already authenticated, need to replace Authorization header prefix and set ath claim
-            String token = authorization.getValue().replaceFirst("^Bearer ", "");
-            request.setHeader("Authorization", DPOP_HEADER + " " + token);
-            byte[] ath = SHA256.digest(token.getBytes(StandardCharsets.US_ASCII));
+            String token = StringUtils.substringAfter(authorization.getValue(), " ");
+            byte[] ath = getSha256().digest(token.getBytes(StandardCharsets.US_ASCII));
             builder.claim("ath", Encoders.BASE64URL.encode(ath));
         } else if (tokenRequest && nonce != null) {
             //still in handshake, need to set nonce
             builder.claim("nonce", nonce);
         }
         request.addHeader(DPOP_HEADER, builder.signWith(jwk.toKeyPair().getPrivate()).compact());
+    }
+
+    private static MessageDigest getSha256() {
+        try {
+            //not thread safe, need new instance on every request
+            return MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private String getUriWithoutQueryString(HttpRequest request) {
@@ -151,11 +157,20 @@ public class DPoPInterceptor implements ExecChainHandler {
                     return DPopHandshakeState.FIRST_INVALID_DPOP_PROOF;
                 }
                 case "use_dpop_nonce": {
-                    if (nonce != null) {
-                        return DPopHandshakeState.REPEATED_USE_DPOP_NONCE;
-                    }
                     if (nonceHeader == null) {
                         return DPopHandshakeState.MISSING_DPOP_NONCE_HEADER;
+                    }
+                    if (nonce != null) {
+                        //it unclear when / how this happens, but it's possible that the authorization server will
+                        // not accept a nonce a returns use_dpop_nonce more than once
+                        boolean sameNonce = nonce.equals(nonceHeader.getValue());
+                        log.warn("Received use_dpop_nonce error again, with {} nonce",
+                            sameNonce ? "the same" : "a different");
+                        try {
+                            Thread.sleep(100L * errorCounter); //sleep in case this is a propagation issue
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
                     }
                     log.info("DPoP nonce obtained, finalizing handshake");
                     this.nonce = nonceHeader.getValue();

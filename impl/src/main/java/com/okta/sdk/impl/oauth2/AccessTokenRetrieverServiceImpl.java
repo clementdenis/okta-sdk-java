@@ -153,8 +153,6 @@ public class AccessTokenRetrieverServiceImpl implements AccessTokenRetrieverServ
             log.debug("Got OAuth2 access token for client id {} from {}",
                 tokenClientConfiguration.getClientId(), tokenClientConfiguration.getBaseUrl() + TOKEN_URI);
 
-            apiClient.setAccessToken(oAuth2AccessToken.getAccessToken());
-
             return oAuth2AccessToken;
         } catch (DPoPHandshakeException e) {
             if (e.continueHandshake) {

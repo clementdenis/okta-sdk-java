@@ -52,7 +52,7 @@ public final class OktaHttpRequestRetryStrategy extends DefaultHttpRequestRetryS
         this(maxRetries, Arrays.asList(InterruptedIOException.class,
                 UnknownHostException.class, ConnectException.class, ConnectionClosedException.class,
                 NoRouteToHostException.class, SSLException.class),
-            Arrays.asList(429, 503, 504));
+            Arrays.asList(429, 500, 501, 502, 503, 504));
     }
 
     @Override
@@ -64,11 +64,11 @@ public final class OktaHttpRequestRetryStrategy extends DefaultHttpRequestRetryS
         } else if (this.nonRetriableIOExceptionClasses.contains(exception.getClass())) {
             return false;
         } else {
-            Iterator var5 = this.nonRetriableIOExceptionClasses.iterator();
+            Iterator<Class<? extends IOException>> exceptions = this.nonRetriableIOExceptionClasses.iterator();
 
-            Class rejectException;
+            Class<? extends Exception> rejectException;
             do {
-                if (!var5.hasNext()) {
+                if (!exceptions.hasNext()) {
                     if (request instanceof CancellableDependency && ((CancellableDependency) request).isCancelled()) {
                         return false;
                     }
@@ -76,7 +76,7 @@ public final class OktaHttpRequestRetryStrategy extends DefaultHttpRequestRetryS
                     return this.handleAsIdempotent(request);
                 }
 
-                rejectException = (Class) var5.next();
+                rejectException = exceptions.next();
             } while (!rejectException.isInstance(exception));
 
             return false;

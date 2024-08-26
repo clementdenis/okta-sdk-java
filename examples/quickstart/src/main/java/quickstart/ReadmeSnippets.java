@@ -33,7 +33,6 @@ import com.okta.sdk.resource.client.Pair;
 import com.okta.sdk.resource.api.*;
 import com.okta.sdk.resource.model.*;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -345,7 +344,7 @@ public class ReadmeSnippets {
         do {
             users.addAll(userApi.listUsers(null, after, 200, null, null, null, null));
             after = PaginationUtil.getAfter(userApi.getApiClient());
-        } while (StringUtils.isNotBlank(after));
+        } while (after != null);
     }
 
     private void complexCaching() {

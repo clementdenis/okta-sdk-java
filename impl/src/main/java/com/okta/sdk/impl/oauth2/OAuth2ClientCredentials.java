@@ -56,7 +56,10 @@ public class OAuth2ClientCredentials extends OAuth implements ClientCredentials<
             setAccessToken(null);
             refreshOAuth2AccessToken();
         }
-        super.applyToParams(queryParams, headerParams, cookieParams);
+        //don't use parent impl, as it does not support DPoP tokens
+        if (oAuth2AccessToken != null) {
+            headerParams.put("Authorization", oAuth2AccessToken.getTokenType() + " " + oAuth2AccessToken.getAccessToken());
+        }
     }
 
     public void refreshOAuth2AccessToken() {

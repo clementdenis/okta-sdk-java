@@ -16,8 +16,6 @@
  */
 package com.okta.sdk.impl.client;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.okta.commons.configcheck.ConfigurationValidator;
 import com.okta.commons.http.config.Proxy;
 import com.okta.commons.lang.ApplicationInfo;
@@ -34,8 +32,6 @@ import com.okta.sdk.client.AuthorizationMode;
 import com.okta.sdk.client.ClientBuilder;
 import com.okta.sdk.impl.api.DefaultClientCredentialsResolver;
 import com.okta.sdk.impl.config.*;
-import com.okta.sdk.impl.deserializer.GroupProfileDeserializer;
-import com.okta.sdk.impl.deserializer.UserProfileDeserializer;
 import com.okta.sdk.impl.io.ClasspathResource;
 import com.okta.sdk.impl.io.DefaultResourceFactory;
 import com.okta.sdk.impl.io.Resource;
@@ -44,13 +40,13 @@ import com.okta.sdk.impl.oauth2.AccessTokenRetrieverService;
 import com.okta.sdk.impl.oauth2.AccessTokenRetrieverServiceImpl;
 import com.okta.sdk.impl.oauth2.DPoPInterceptor;
 import com.okta.sdk.impl.oauth2.OAuth2ClientCredentials;
-import com.okta.sdk.impl.serializer.GroupProfileSerializer;
-import com.okta.sdk.impl.serializer.UserProfileSerializer;
 import com.okta.sdk.impl.util.ConfigUtil;
 import com.okta.sdk.impl.util.DefaultBaseUrlResolver;
 
 import com.okta.sdk.impl.retry.OktaHttpRequestRetryStrategy;
-import com.okta.sdk.resource.model.GroupProfile;
+import com.okta.sdk.resource.client.auth.ApiKeyAuth;
+import com.okta.sdk.resource.client.auth.Authentication;
+import com.okta.sdk.resource.client.auth.OAuth;
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.config.ConnectionConfig;
@@ -71,7 +67,6 @@ import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 
 import com.okta.sdk.resource.client.ApiClient;
 
-import com.okta.sdk.resource.model.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,7 +109,6 @@ public class DefaultClientBuilder implements ClientBuilder {
     private ClientCredentials clientCredentials;
     private boolean allowNonHttpsForTesting = false;
     private final ClientConfiguration clientConfig = new ClientConfiguration();
-    private AccessTokenRetrieverService accessTokenRetrieverService;
 
     public DefaultClientBuilder() {
         this(new DefaultResourceFactory());
@@ -317,7 +311,7 @@ public class DefaultClientBuilder implements ClientBuilder {
             CacheManagerBuilder cacheManagerBuilder = Caches.newCacheManager()
                 .withDefaultTimeToIdle(this.clientConfig.getCacheManagerTti(), TimeUnit.SECONDS)
                 .withDefaultTimeToLive(this.clientConfig.getCacheManagerTtl(), TimeUnit.SECONDS);
-            if (this.clientConfig.getCacheManagerCaches().size() > 0) {
+            if (!this.clientConfig.getCacheManagerCaches().isEmpty()) {
                 for (CacheConfigurationBuilder builder : this.clientConfig.getCacheManagerCaches().values()) {
                     cacheManagerBuilder.withCache(builder);
                 }
@@ -337,15 +331,7 @@ public class DefaultClientBuilder implements ClientBuilder {
             setProxy(httpClientBuilder, clientConfig);
         }
 
-        ApiClient apiClient = new ApiClient(httpClientBuilder.build(), this.cacheManager);
-        apiClient.setBasePath(this.clientConfig.getBaseUrl());
-
-        String userAgentValue = ApplicationInfo.get().entrySet().stream()
-            .map(entry -> entry.getKey() + "/" + entry.getValue())
-            .collect(Collectors.joining(" "));
-        apiClient.setUserAgent(userAgentValue);
-
-        addCustomSerializerAndDeserializers(apiClient);
+        ApiClient apiClient;
 
         if (!isOAuth2Flow()) {
             if (this.clientConfig.getClientCredentialsResolver() == null && this.clientCredentials != null) {
@@ -353,7 +339,8 @@ public class DefaultClientBuilder implements ClientBuilder {
             } else if (this.clientConfig.getClientCredentialsResolver() == null) {
                 this.clientConfig.setClientCredentialsResolver(new DefaultClientCredentialsResolver(this.clientConfig));
             }
-
+            apiClient = createApiClient(httpClientBuilder,
+                Collections.singletonMap("apiToken", new ApiKeyAuth("header", "Authorization")));
             apiClient.setApiKeyPrefix(AuthenticationScheme.SSWS.name());
             apiClient.setApiKey((String) this.clientConfig.getClientCredentialsResolver().getClientCredentials().getCredentials());
         } else {
@@ -363,16 +350,21 @@ public class DefaultClientBuilder implements ClientBuilder {
 
             if (hasAccessToken()) {
                 log.debug("Will use client provided Access token for OAuth2 authentication (private key, if supplied would be ignored)");
+                apiClient = createApiClient(httpClientBuilder,
+                    Collections.singletonMap("oauth2", new OAuth()));
                 apiClient.setAccessToken(this.clientConfig.getOAuth2AccessToken());
             } else {
                 log.debug("Will retrieve Access Token automatically from Okta for OAuth2 authentication");
-                accessTokenRetrieverService = new AccessTokenRetrieverServiceImpl(clientConfig, apiClient);
+                AccessTokenRetrieverService accessTokenRetrieverService = new AccessTokenRetrieverServiceImpl(
+                    clientConfig,
+                    //access token retriever does not need auth
+                    createApiClient(httpClientBuilder, Collections.emptyMap()));
 
                 OAuth2ClientCredentials oAuth2ClientCredentials =
                     new OAuth2ClientCredentials(accessTokenRetrieverService);
 
-                // replace the default OAuth authentication with an auto-refreshing one
-                apiClient.replaceAuthentication("oauth2", oAuth2ClientCredentials);
+                apiClient = createApiClient(httpClientBuilder,
+                    Collections.singletonMap("oauth2", oAuth2ClientCredentials));
                 oAuth2ClientCredentials.refreshOAuth2AccessToken();
 
                 this.clientConfig.setClientCredentialsResolver(new DefaultClientCredentialsResolver(oAuth2ClientCredentials));
@@ -382,8 +374,25 @@ public class DefaultClientBuilder implements ClientBuilder {
         return apiClient;
     }
 
+    private ApiClient createApiClient(HttpClientBuilder httpClientBuilder, Map<String, Authentication> authMap) {
+        ApiClient apiClient = new ApiClient(httpClientBuilder.build(), authMap);
+        if (this.clientConfig.isCacheManagerEnabled()) {
+            //TODO support caching by subclassing ApiClient and overriding invokeAPI with cache operations
+            // MUST NOT override the ApiClient mustache template
+            throw new UnsupportedOperationException("Caching is not supported in current version");
+        }
+        apiClient.setBasePath(this.clientConfig.getBaseUrl());
+
+        String userAgentValue = ApplicationInfo.get().entrySet().stream()
+            .map(entry -> entry.getKey() + "/" + entry.getValue())
+            .collect(Collectors.joining(" "));
+        apiClient.setUserAgent(userAgentValue);
+        return apiClient;
+    }
+
     /**
      * Override to customize the client, allowing one to add additional interceptors.
+     *
      * @param clientConfig the current ClientConfiguration
      * @return an {@link HttpClientBuilder} initialized with default configuration
      */
@@ -466,16 +475,6 @@ public class DefaultClientBuilder implements ClientBuilder {
             boolean privateKeyPemFileExists = Files.exists(privateKeyPemFilePath, LinkOption.NOFOLLOW_LINKS);
             Assert.isTrue(privateKeyPemFileExists, "privateKey file does not exist");
         }
-    }
-
-    private void addCustomSerializerAndDeserializers(ApiClient apiClient) {
-        ObjectMapper mapper = apiClient.getObjectMapper();
-        SimpleModule module = new SimpleModule();
-        module.addSerializer(UserProfile.class, new UserProfileSerializer());
-        module.addDeserializer(UserProfile.class, new UserProfileDeserializer());
-        module.addSerializer(GroupProfile.class, new GroupProfileSerializer());
-        module.addDeserializer(GroupProfile.class, new GroupProfileDeserializer());
-        mapper.registerModule(module);
     }
 
     @Override
