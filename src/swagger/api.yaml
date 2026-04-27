@@ -12079,6 +12079,241 @@ paths:
         lifecycle: GA
         isGenerallyAvailable: false
         SKUs: []
+  /governance/api/v1/entitlements:
+    x-okta-lifecycle:
+      lifecycle: GA
+      isGenerallyAvailable: false
+      SKUs: []
+    get:
+      summary: List all governance entitlements
+      description: |-
+        Lists all governance entitlements. A filter query parameter is required.
+        For example: `filter=parent.externalId eq "{appId}" AND parent.type eq "APPLICATION"`
+      operationId: listGovernanceEntitlements
+      parameters:
+      - name: filter
+        in: query
+        required: true
+        description: 'SCIM filter expression. Required. Example: `parent.externalId eq "{appId}" AND parent.type eq "APPLICATION"`'
+        schema:
+          type: string
+      - name: limit
+        in: query
+        description: Maximum number of results to return (default 20, max 200)
+        schema:
+          type: integer
+          default: 20
+          maximum: 200
+      - name: after
+        in: query
+        description: Cursor for pagination
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovernanceEntitlementsResponse'
+        '403':
+          $ref: '#/components/responses/ErrorAccessDenied403'
+        '429':
+          $ref: '#/components/responses/ErrorTooManyRequests429'
+      security:
+      - apiToken: []
+      - oauth2:
+        - okta.governance.entitlements.read
+      tags:
+      - GovernanceEntitlement
+    post:
+      summary: Create a governance entitlement
+      description: Creates a governance entitlement for an application
+      operationId: createGovernanceEntitlement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GovernanceEntitlementCreate'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovernanceEntitlement'
+        '400':
+          $ref: '#/components/responses/ErrorApiValidationFailed400'
+        '403':
+          $ref: '#/components/responses/ErrorAccessDenied403'
+        '429':
+          $ref: '#/components/responses/ErrorTooManyRequests429'
+      security:
+      - apiToken: []
+      - oauth2:
+        - okta.governance.entitlements.manage
+      tags:
+      - GovernanceEntitlement
+  /governance/api/v1/entitlements/{governanceEntitlementId}:
+    x-okta-lifecycle:
+      lifecycle: GA
+      isGenerallyAvailable: false
+      SKUs: []
+    parameters:
+    - $ref: '#/components/parameters/pathGovernanceEntitlementId'
+    get:
+      summary: Retrieve a governance entitlement
+      description: Retrieves a governance entitlement by its ID
+      operationId: getGovernanceEntitlement
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovernanceEntitlement'
+        '404':
+          $ref: '#/components/responses/ErrorResourceNotFound404'
+        '403':
+          $ref: '#/components/responses/ErrorAccessDenied403'
+        '429':
+          $ref: '#/components/responses/ErrorTooManyRequests429'
+      security:
+      - apiToken: []
+      - oauth2:
+        - okta.governance.entitlements.read
+      tags:
+      - GovernanceEntitlement
+    put:
+      summary: Replace a governance entitlement
+      description: Replaces a governance entitlement by its ID
+      operationId: replaceGovernanceEntitlement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GovernanceEntitlement'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovernanceEntitlement'
+        '400':
+          $ref: '#/components/responses/ErrorApiValidationFailed400'
+        '403':
+          $ref: '#/components/responses/ErrorAccessDenied403'
+        '404':
+          $ref: '#/components/responses/ErrorResourceNotFound404'
+        '429':
+          $ref: '#/components/responses/ErrorTooManyRequests429'
+      security:
+      - apiToken: []
+      - oauth2:
+        - okta.governance.entitlements.manage
+      tags:
+      - GovernanceEntitlement
+    delete:
+      summary: Delete a governance entitlement
+      description: Deletes a governance entitlement by its ID
+      operationId: deleteGovernanceEntitlement
+      responses:
+        '204':
+          description: No Content
+        '403':
+          $ref: '#/components/responses/ErrorAccessDenied403'
+        '404':
+          $ref: '#/components/responses/ErrorResourceNotFound404'
+        '429':
+          $ref: '#/components/responses/ErrorTooManyRequests429'
+      security:
+      - apiToken: []
+      - oauth2:
+        - okta.governance.entitlements.manage
+      tags:
+      - GovernanceEntitlement
+  /governance/api/v1/entitlements/{governanceEntitlementId}/values:
+    x-okta-lifecycle:
+      lifecycle: GA
+      isGenerallyAvailable: false
+      SKUs: []
+    parameters:
+    - $ref: '#/components/parameters/pathGovernanceEntitlementId'
+    get:
+      summary: List all values for a governance entitlement
+      description: Lists all values for a specific governance entitlement
+      operationId: listGovernanceEntitlementValues
+      parameters:
+      - name: limit
+        in: query
+        description: Maximum number of results to return (default 20, max 200)
+        schema:
+          type: integer
+          default: 20
+          maximum: 200
+      - name: after
+        in: query
+        description: Cursor for pagination
+        schema:
+          type: string
+      - name: filter
+        in: query
+        description: 'SCIM filter expression. Example: `name sw "License"`'
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovernanceEntitlementValuesResponse'
+        '403':
+          $ref: '#/components/responses/ErrorAccessDenied403'
+        '404':
+          $ref: '#/components/responses/ErrorResourceNotFound404'
+        '429':
+          $ref: '#/components/responses/ErrorTooManyRequests429'
+      security:
+      - apiToken: []
+      - oauth2:
+        - okta.governance.entitlements.read
+      tags:
+      - GovernanceEntitlement
+  /governance/api/v1/entitlements/{governanceEntitlementId}/values/{governanceEntitlementValueId}:
+    x-okta-lifecycle:
+      lifecycle: GA
+      isGenerallyAvailable: false
+      SKUs: []
+    parameters:
+    - $ref: '#/components/parameters/pathGovernanceEntitlementId'
+    - $ref: '#/components/parameters/pathGovernanceEntitlementValueId'
+    get:
+      summary: Retrieve an entitlement value
+      description: Retrieves a single entitlement value
+      operationId: getGovernanceEntitlementValue
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovernanceEntitlementValueFull'
+        '403':
+          $ref: '#/components/responses/ErrorAccessDenied403'
+        '404':
+          $ref: '#/components/responses/ErrorResourceNotFound404'
+        '429':
+          $ref: '#/components/responses/ErrorTooManyRequests429'
+      security:
+      - apiToken: []
+      - oauth2:
+        - okta.governance.entitlements.read
+      tags:
+      - GovernanceEntitlement
   /api/v1/iam/resource-sets:
     get:
       summary: List all Resource Sets
@@ -45646,6 +45881,22 @@ components:
         example: 0obfxqCAJWWGELFTYASJ
       required: true
       description: The `id` of a bundle entitlement
+    pathGovernanceEntitlementId:
+      name: governanceEntitlementId
+      in: path
+      schema:
+        type: string
+        example: ent5rb5mt2H3d1TJd0h7
+      required: true
+      description: The `id` of a governance entitlement
+    pathGovernanceEntitlementValueId:
+      name: governanceEntitlementValueId
+      in: path
+      schema:
+        type: string
+        example: entfxqCAJWWGELFTYAAA
+      required: true
+      description: The `id` of a governance entitlement value
     pathEventHookId:
       name: eventHookId
       description: '`id` of the Event Hook'
@@ -53096,6 +53347,249 @@ components:
           anyOf:
             - $ref: '#/components/schemas/LinksSelf'
             - $ref: '#/components/schemas/LinksNext'
+    GovernanceEntitlement:
+      description: A full governance entitlement object with parent and values
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique identifier of the entitlement
+          readOnly: true
+        name:
+          type: string
+          description: Display name for the entitlement
+        externalValue:
+          type: string
+          description: The external value of the entitlement property
+        description:
+          type: string
+          description: Description of the entitlement
+        multiValue:
+          type: boolean
+          description: Indicates if the entitlement can hold multiple values
+        required:
+          type: boolean
+          description: Indicates if the entitlement is required
+        dataType:
+          $ref: '#/components/schemas/GovernanceEntitlementPropertyDatatype'
+        parentResourceOrn:
+          type: string
+          description: The ORN of the parent resource (application)
+          readOnly: true
+        parent:
+          $ref: '#/components/schemas/GovernanceEntitlementTargetResource'
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/GovernanceEntitlementValueFull'
+        metadata:
+          type: object
+          description: Pagination metadata for values
+          properties:
+            total:
+              type: integer
+              description: Total number of values
+        status:
+          type: string
+          description: The status of the entitlement
+          readOnly: true
+        orn:
+          type: string
+          description: The Okta Resource Name of the entitlement
+          readOnly: true
+        created:
+          type: string
+          format: date-time
+          description: Timestamp when the entitlement was created
+          readOnly: true
+        lastUpdated:
+          type: string
+          format: date-time
+          description: Timestamp when the entitlement was last updated
+          readOnly: true
+        createdBy:
+          type: string
+          description: ID of the user who created the entitlement
+          readOnly: true
+        lastUpdatedBy:
+          type: string
+          description: ID of the user who last updated the entitlement
+          readOnly: true
+        _links:
+          type: object
+          description: Link relations
+          readOnly: true
+    GovernanceEntitlementCreate:
+      description: Request body for creating a governance entitlement
+      type: object
+      required:
+        - name
+        - externalValue
+        - multiValue
+        - dataType
+      properties:
+        name:
+          type: string
+          description: Display name for the entitlement
+        externalValue:
+          type: string
+          description: The external value of the entitlement property
+        description:
+          type: string
+          description: Description of the entitlement
+        multiValue:
+          type: boolean
+          description: Indicates if the entitlement can hold multiple values
+        dataType:
+          $ref: '#/components/schemas/GovernanceEntitlementPropertyDatatype'
+        parent:
+          $ref: '#/components/schemas/GovernanceEntitlementTargetResource'
+        values:
+          type: array
+          description: Initial values for the entitlement
+          items:
+            $ref: '#/components/schemas/GovernanceEntitlementValueWritable'
+    GovernanceEntitlementPropertyDatatype:
+      description: The data type of an entitlement property
+      type: string
+      enum:
+        - string
+        - array
+    GovernanceEntitlementTargetResource:
+      description: Reference to the parent application resource
+      type: object
+      required:
+        - externalId
+        - type
+      properties:
+        externalId:
+          type: string
+          description: The Okta app ID of the parent resource
+        type:
+          type: string
+          description: The type of the parent resource
+          enum:
+            - APPLICATION
+        name:
+          type: string
+          description: The display name of the parent resource
+          readOnly: true
+    GovernanceEntitlementValueFull:
+      description: A full governance entitlement value object
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique identifier of the entitlement value
+        name:
+          type: string
+          description: Display name for the entitlement value
+          minLength: 1
+          maxLength: 255
+        externalValue:
+          type: string
+          description: The value of an entitlement property value
+          minLength: 1
+          maxLength: 2000
+        externalId:
+          type: string
+          description: Read-only ID in the downstream application
+          readOnly: true
+          minLength: 1
+          maxLength: 512
+        description:
+          type: string
+          description: Description of the entitlement value
+          minLength: 1
+          maxLength: 1024
+        orn:
+          type: string
+          description: The Okta Resource Name of the entitlement value
+          readOnly: true
+        entitlementId:
+          type: string
+          description: The ID of the parent entitlement
+          readOnly: true
+        parentResourceOrn:
+          type: string
+          description: The Okta resource ORN of the parent application
+          readOnly: true
+        parent:
+          $ref: '#/components/schemas/GovernanceEntitlementTargetResource'
+        created:
+          type: string
+          format: date-time
+          description: Timestamp when the value was created
+          readOnly: true
+        lastUpdated:
+          type: string
+          format: date-time
+          description: Timestamp when the value was last updated
+          readOnly: true
+        createdBy:
+          type: string
+          description: ID of the user who created the value
+          readOnly: true
+        lastUpdatedBy:
+          type: string
+          description: ID of the user who last updated the value
+          readOnly: true
+    GovernanceEntitlementValueWritable:
+      description: Writable properties for creating an entitlement value
+      type: object
+      required:
+        - name
+        - externalValue
+      properties:
+        name:
+          type: string
+          description: The display name for an entitlement value
+          minLength: 1
+          maxLength: 255
+        externalValue:
+          type: string
+          description: The value of an entitlement property value
+          minLength: 1
+          maxLength: 2000
+        description:
+          type: string
+          description: The description of an entitlement value
+          minLength: 1
+          maxLength: 1024
+    GovernanceEntitlementValuesResponse:
+      description: List response for governance entitlement values
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/GovernanceEntitlementValueFull'
+        _links:
+          type: object
+          description: Link relations for pagination
+          readOnly: true
+          properties:
+            next:
+              $ref: '#/components/schemas/HrefObject'
+            self:
+              $ref: '#/components/schemas/HrefObjectSelfLink'
+    GovernanceEntitlementsResponse:
+      description: List response for governance entitlements
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/GovernanceEntitlement'
+        _links:
+          type: object
+          description: Link relations for pagination
+          readOnly: true
+          properties:
+            next:
+              $ref: '#/components/schemas/HrefObject'
+            self:
+              $ref: '#/components/schemas/HrefObjectSelfLink'
     GovernanceSourceType:
       description: The grant type
       type: string
