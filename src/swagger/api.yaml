@@ -12079,6 +12079,182 @@ paths:
         lifecycle: GA
         isGenerallyAvailable: false
         SKUs: []
+  /governance/api/v1/entitlement-bundles:
+    x-okta-lifecycle:
+      lifecycle: GA
+      isGenerallyAvailable: false
+      SKUs: []
+    get:
+      summary: List all governance entitlement bundles
+      description: |-
+        Lists all governance entitlement bundles. A filter query parameter is required.
+        For example: `filter=target.externalId eq "{appId}" AND target.type eq "APPLICATION"`.
+        Use `include=full_entitlements` to receive the full entitlement details inline.
+      operationId: listGovernanceEntitlementBundles
+      parameters:
+      - name: filter
+        in: query
+        description: 'Optional SCIM filter expression. Supported properties: id, lastUpdated, targetResourceOrn, target.externalId, target.type, status, name. Example: `target.externalId eq "{appId}" AND target.type eq "APPLICATION"`'
+        schema:
+          type: string
+      - name: limit
+        in: query
+        description: Maximum number of results to return (default 20, max 200)
+        schema:
+          type: integer
+          default: 20
+          maximum: 200
+      - name: after
+        in: query
+        description: Cursor for pagination
+        schema:
+          type: string
+      - name: orderBy
+        in: query
+        description: 'Optional ordering specification, e.g. `lastUpdated desc` or `lastUpdated asc,id asc`'
+        schema:
+          type: string
+      - name: include
+        in: query
+        description: Additional properties to include in the response (e.g., `full_entitlements`)
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovernanceEntitlementBundlesResponse'
+        '403':
+          $ref: '#/components/responses/ErrorAccessDenied403'
+        '429':
+          $ref: '#/components/responses/ErrorTooManyRequests429'
+      security:
+      - apiToken: []
+      - oauth2:
+        - okta.governance.entitlements.read
+      tags:
+      - GovernanceEntitlementBundle
+    post:
+      summary: Create a governance entitlement bundle
+      description: Creates a governance entitlement bundle for an application
+      operationId: createGovernanceEntitlementBundle
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GovernanceEntitlementBundleCreate'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovernanceEntitlementBundle'
+        '400':
+          $ref: '#/components/responses/ErrorApiValidationFailed400'
+        '403':
+          $ref: '#/components/responses/ErrorAccessDenied403'
+        '429':
+          $ref: '#/components/responses/ErrorTooManyRequests429'
+      security:
+      - apiToken: []
+      - oauth2:
+        - okta.governance.entitlements.manage
+      tags:
+      - GovernanceEntitlementBundle
+  /governance/api/v1/entitlement-bundles/{governanceEntitlementBundleId}:
+    x-okta-lifecycle:
+      lifecycle: GA
+      isGenerallyAvailable: false
+      SKUs: []
+    parameters:
+    - $ref: '#/components/parameters/pathGovernanceEntitlementBundleId'
+    get:
+      summary: Retrieve a governance entitlement bundle
+      description: Retrieves a governance entitlement bundle by its ID. Use `include=full_entitlements` to receive the full entitlement details inline.
+      operationId: getGovernanceEntitlementBundle
+      parameters:
+      - name: include
+        in: query
+        description: Additional properties to include in the response (e.g., `full_entitlements`)
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovernanceEntitlementBundle'
+        '404':
+          $ref: '#/components/responses/ErrorResourceNotFound404'
+        '403':
+          $ref: '#/components/responses/ErrorAccessDenied403'
+        '429':
+          $ref: '#/components/responses/ErrorTooManyRequests429'
+      security:
+      - apiToken: []
+      - oauth2:
+        - okta.governance.entitlements.read
+      tags:
+      - GovernanceEntitlementBundle
+    put:
+      summary: Replace a governance entitlement bundle
+      description: Replaces a governance entitlement bundle by its ID
+      operationId: replaceGovernanceEntitlementBundle
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GovernanceEntitlementBundleUpdate'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovernanceEntitlementBundle'
+        '400':
+          $ref: '#/components/responses/ErrorApiValidationFailed400'
+        '403':
+          $ref: '#/components/responses/ErrorAccessDenied403'
+        '404':
+          $ref: '#/components/responses/ErrorResourceNotFound404'
+        '429':
+          $ref: '#/components/responses/ErrorTooManyRequests429'
+      security:
+      - apiToken: []
+      - oauth2:
+        - okta.governance.entitlements.manage
+      tags:
+      - GovernanceEntitlementBundle
+    delete:
+      summary: Delete a governance entitlement bundle
+      description: Deletes a governance entitlement bundle by its ID
+      operationId: deleteGovernanceEntitlementBundle
+      responses:
+        '204':
+          description: No Content
+        '403':
+          $ref: '#/components/responses/ErrorAccessDenied403'
+        '404':
+          $ref: '#/components/responses/ErrorResourceNotFound404'
+        '429':
+          $ref: '#/components/responses/ErrorTooManyRequests429'
+      security:
+      - apiToken: []
+      - oauth2:
+        - okta.governance.entitlements.manage
+      tags:
+      - GovernanceEntitlementBundle
   /governance/api/v1/entitlements:
     x-okta-lifecycle:
       lifecycle: GA
@@ -45881,6 +46057,14 @@ components:
         example: 0obfxqCAJWWGELFTYASJ
       required: true
       description: The `id` of a bundle entitlement
+    pathGovernanceEntitlementBundleId:
+      name: governanceEntitlementBundleId
+      in: path
+      schema:
+        type: string
+        example: ebd5rb5mt2H3d1TJd0h7
+      required: true
+      description: The `id` of a governance entitlement bundle
     pathGovernanceEntitlementId:
       name: governanceEntitlementId
       in: path
@@ -53419,6 +53603,152 @@ components:
           type: object
           description: Link relations
           readOnly: true
+    GovernanceEntitlementBundle:
+      description: A governance entitlement bundle - a role-like grouping of entitlements that can be granted together
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique identifier of the bundle
+          readOnly: true
+        name:
+          type: string
+          description: Display name for the bundle
+        description:
+          type: string
+          description: Description of the bundle
+        target:
+          $ref: '#/components/schemas/GovernanceEntitlementTargetResource'
+        targetResourceOrn:
+          type: string
+          description: The ORN of the target application resource
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/GovernanceEntitlementBundleStatus'
+        entitlements:
+          type: array
+          description: Entitlements included in this bundle. When listed/retrieved without `include=full_entitlements`, items contain only `id` (and optional `values`); with `full_entitlements`, items also carry the full entitlement properties (which clients may ignore).
+          items:
+            $ref: '#/components/schemas/GovernanceEntitlementBundleEntitlement'
+        orn:
+          type: string
+          description: The Okta Resource Name of the bundle
+          readOnly: true
+        created:
+          type: string
+          format: date-time
+          description: Timestamp when the bundle was created
+          readOnly: true
+        lastUpdated:
+          type: string
+          format: date-time
+          description: Timestamp when the bundle was last updated
+          readOnly: true
+        createdBy:
+          type: string
+          description: ID of the user who created the bundle
+          readOnly: true
+        lastUpdatedBy:
+          type: string
+          description: ID of the user who last updated the bundle
+          readOnly: true
+        _links:
+          type: object
+          description: Link relations
+          readOnly: true
+    GovernanceEntitlementBundleCreate:
+      description: Request body for creating a governance entitlement bundle
+      type: object
+      required:
+        - name
+        - target
+        - entitlements
+      properties:
+        name:
+          type: string
+          description: Display name for the bundle
+        description:
+          type: string
+          description: Description of the bundle
+        target:
+          $ref: '#/components/schemas/GovernanceEntitlementTargetResource'
+        entitlements:
+          type: array
+          description: Entitlements to include in the bundle (each item must reference an existing entitlement by `id`)
+          items:
+            $ref: '#/components/schemas/GovernanceEntitlementBundleEntitlement'
+    GovernanceEntitlementBundleEntitlement:
+      description: An entitlement reference within a bundle
+      type: object
+      properties:
+        id:
+          type: string
+          description: The ID of the referenced entitlement
+        values:
+          type: array
+          description: Specific values of the entitlement included in this bundle
+          items:
+            $ref: '#/components/schemas/GovernanceEntitlementBundleEntitlementValue'
+    GovernanceEntitlementBundleEntitlementValue:
+      description: A value reference within a bundled entitlement
+      type: object
+      properties:
+        id:
+          type: string
+          description: The ID of the referenced entitlement value
+    GovernanceEntitlementBundleStatus:
+      description: The lifecycle status of an entitlement bundle
+      type: string
+      enum:
+        - ACTIVE
+        - DELETED
+    GovernanceEntitlementBundleUpdate:
+      description: Request body for replacing a governance entitlement bundle
+      type: object
+      required:
+        - id
+        - targetResourceOrn
+        - target
+        - name
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the bundle (must match the path parameter)
+        targetResourceOrn:
+          type: string
+          description: The ORN of the target application resource
+        target:
+          $ref: '#/components/schemas/GovernanceEntitlementTargetResource'
+        name:
+          type: string
+          description: Display name for the bundle
+        description:
+          type: string
+          description: Description of the bundle
+        status:
+          $ref: '#/components/schemas/GovernanceEntitlementBundleStatus'
+        entitlements:
+          type: array
+          description: Entitlements to include in the bundle
+          items:
+            $ref: '#/components/schemas/GovernanceEntitlementBundleEntitlement'
+    GovernanceEntitlementBundlesResponse:
+      description: List response for governance entitlement bundles
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/GovernanceEntitlementBundle'
+        _links:
+          type: object
+          description: Link relations for pagination
+          readOnly: true
+          properties:
+            next:
+              $ref: '#/components/schemas/HrefObject'
+            self:
+              $ref: '#/components/schemas/HrefObjectSelfLink'
     GovernanceEntitlementCreate:
       description: Request body for creating a governance entitlement
       type: object
