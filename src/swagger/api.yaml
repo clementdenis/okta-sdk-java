@@ -51791,6 +51791,10 @@ components:
         createdDate:
           type: string
           readOnly: true
+        displayRemediationMode:
+          $ref: '#/components/schemas/DisplayRemediationMode'
+        gracePeriod:
+          $ref: '#/components/schemas/GracePeriod'
         id:
           type: string
           readOnly: true
@@ -52216,6 +52220,11 @@ components:
       type: string
       enum:
         - ALL_INTERNAL_VOLUMES
+    DisplayRemediationMode:
+      type: string
+      enum:
+        - HIDE
+        - SHOW
     DomainCertificate:
       description: Defines the properties of the certificate
       type: object
@@ -53926,6 +53935,16 @@ components:
       enum:
         - CUSTOM
         - ENTITLEMENT-BUNDLE
+    GracePeriod:
+      type: object
+      properties:
+        expiry:
+          type: string
+        type:
+          type: string
+          enum:
+            - BY_DATE_TIME
+            - BY_DURATION
     GrantOrTokenStatus:
       description: Status
       example: ACTIVE
