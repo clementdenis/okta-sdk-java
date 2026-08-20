@@ -59147,6 +59147,8 @@ components:
           type: string
           description: The URL string that references a logo for the client. This logo appears on the client tile in the End-User Dashboard. It also appears on the client consent dialog during the client consent flow.
           maxLength: 1024
+        network:
+          $ref: '#/components/schemas/OpenIdConnectApplicationSettingsClientNetwork'
         participate_slo:
           description: |
             <div class="x-lifecycle-container"><x-lifecycle class="ea"></x-lifecycle> <x-lifecycle class="oie"></x-lifecycle></div>Allows the app to participate in front-channel Single Logout
@@ -59231,6 +59233,22 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/schemas-JsonWebKey'
+    OpenIdConnectApplicationSettingsClientNetwork:
+      type: object
+      properties:
+        connection:
+          type: string
+          enum:
+            - ANYWHERE
+            - ZONE
+        exclude:
+          type: array
+          items:
+            type: string
+        include:
+          type: array
+          items:
+            type: string
     OpenIdConnectApplicationSettingsRefreshToken:
       description: |
         Refresh token configuration for an OAuth 2.0 client
