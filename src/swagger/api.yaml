@@ -52452,6 +52452,9 @@ components:
           external_idp: '#/components/schemas/AuthenticatorKeyExternalIdp'
           okta_password: '#/components/schemas/AuthenticatorKeyPassword'
           okta_verify: '#/components/schemas/AuthenticatorKeyOktaVerify'
+          okta_verify_fastpass: '#/components/schemas/AuthenticatorKeyOktaVerify'
+          okta_verify_push: '#/components/schemas/AuthenticatorKeyOktaVerify'
+          okta_verify_totp: '#/components/schemas/AuthenticatorKeyOktaVerify'
           onprem_mfa: '#/components/schemas/AuthenticatorKeyOnprem'
           phone_number: '#/components/schemas/AuthenticatorKeyPhone'
           security_key: '#/components/schemas/AuthenticatorKeySecurityKey'
@@ -52516,6 +52519,9 @@ components:
         - okta_email
         - okta_password
         - okta_verify
+        - okta_verify_fastpass
+        - okta_verify_push
+        - okta_verify_totp
         - onprem_mfa
         - phone_number
         - rsa_token
@@ -52719,6 +52725,9 @@ components:
         - okta_email
         - okta_password
         - okta_verify
+        - okta_verify_fastpass
+        - okta_verify_push
+        - okta_verify_totp
         - onprem_mfa
         - phone_number
         - security_key
